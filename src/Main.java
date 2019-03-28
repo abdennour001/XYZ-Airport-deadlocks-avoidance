@@ -3,6 +3,9 @@ import java.util.Scanner;
 
 public class Main {
 
+    // our xyz airport
+    private static Airport xyz;
+
     // bankers algorithm variable
     private static int numberProcess;
     private static int numberResource;
@@ -13,12 +16,19 @@ public class Main {
     private static int[][] needed=new int[100][100];
     private static int[][] assigned=new int[100][100];
     private static int[] available=new int[100];
+    private static int[] utilization=new int[5];
+    private static String safeSequence="";
 
     /** The main methods of the bankers algorithm **/
 
     public static boolean isSafe() {
         int[] job;
         boolean[] finish=new boolean[100];
+
+        // initial all resource utilization to zero
+        for (int i=0; i<numberResource; i++) {
+            utilization[i] = 0;
+        }
 
         job = available;
         // initial all the processes as not finished
@@ -32,10 +42,13 @@ public class Main {
                 if (!finish[i] && amountAvailable(i, job)) {
                     for (int j=0; j<numberResource; j++) {
                         job[j] = job[j] + assigned[i][j];
+                        utilization[j] += assigned[i][j];
                     }
                     found=true;
+                    safeSequence = safeSequence.concat("P" + i + " ");
+                    xyz.getFlightsArray()[i].setRank(getNumberOfFinishedProcesses(finish));
                     finish[i] = true;
-                    System.out.print("P" + i + " ");
+                    showAvailableResources(i);
                     break;
                 }
             }
@@ -45,6 +58,16 @@ public class Main {
             if (!finish[i]) return false;
         }
         return true;
+    }
+
+    private static int getNumberOfFinishedProcesses(boolean[] finish) {
+        int count=1;
+        for (int i=0; i<numberProcess; i++) {
+            if (finish[i]) {
+                count += maxNeeded[i][0];
+            }
+        }
+        return count;
     }
 
     private static boolean allFinished(boolean[] finish) {
@@ -137,42 +160,74 @@ public class Main {
         return false;
     }
 
-    public static  void main(String[] args) {
-        Scanner userInput=new Scanner(System.in);
-        // Grab user inputs for number of processes
-        System.out.print("Enter the number of processes: ");
-        numberProcess = userInput.nextInt();
-        // Grab user inputs for number of resources
-        System.out.print("Enter the number of resources: ");
-        numberResource = userInput.nextInt();
-        // Grab user inputs for maximum number of each resource type
+    public static void initAirportArrays() {
+        numberProcess = xyz.getNumberFlight();
+        numberResource = xyz.getNumberResources();
         for (int i=0; i<numberResource; i++) {
-            System.out.printf("Enter the maximum number of resource type %d : ", i+1);
-            int r = userInput.nextInt();
-            existing[i] = r;
-            available[i] = r;
+            existing[i] = Resource.getNumberOccurrences(i);
+            available[i] = Resource.getNumberOccurrences(i);
         }
 
-        // Grab user inputs for maximum number of each resource that can be claimed by each process
         for (int i=0; i<numberProcess; i++) {
             for (int j=0; j<numberResource; j++) {
-                System.out.printf("Enter the maximum number of resource %d that can be claimed by process %d: ", j+1, i+1);
-                int max=userInput.nextInt();
-                maxNeeded[i][j] = max;
+                needed[i][j] = xyz.getFlightsArray()[i].getResourceNeedArray(j);
+                maxNeeded[i][j] = needed[i][j];
+                assigned[i][j] = xyz.getFlightsArray()[i].getAssignedArray(j);
+                available[j] = available[j] - assigned[i][j];
+                needed[i][j] = maxNeeded[i][j] - assigned[i][j];
             }
         }
+    }
 
-        // Grab user inputs for possession of each resource by each process at time Ti
+    private static void showSafeSequence() {
+        System.out.print("Safe Sequence: ");
+        System.out.println(safeSequence);
+    }
+
+    public static void showAvailableResources(int t) {
+        System.out.print("Time T (Process "+t+") Available: ");
+        for (int i=0; i<numberResource; i++) {
+            System.out.print(available[i] + " ");
+        }
+        System.out.println();
+    }
+
+    public static  void main(String[] args) {
+
+        xyz=new Airport("src/origin/xyz_airport.txt");
+        initAirportArrays();
+        if (isSafe()) {
+            showSafeSequence();
+            showUtilizationArray();
+            calculateWaiting();
+            calculateAverage();
+        } else {
+            System.out.println("The system is unsafe!");
+        }
+    }
+
+    private static void showUtilizationArray() {
+        System.out.print("Utilization: ");
+        for (int i=0; i<numberResource; i++) {
+            System.out.print(utilization[i] + " ");
+        }
+        System.out.println();
+    }
+
+    private static void calculateAverage() {
+        System.out.print("Average: ");
+        int sum=0;
         for (int i=0; i<numberProcess; i++) {
-            for (int j=0; j<numberResource; j++) {
-                System.out.printf("Enter the number of resources of type %d allocated to process %d at time T0: ", j+1, i+1);
-                int alloc=userInput.nextInt();
-                assigned[i][j] = alloc;
-                available[j] = available[j] - alloc;
-                needed[i][j] = maxNeeded[i][j] - alloc;
-            }
+            sum += xyz.getFlightsArray()[i].getRank();
         }
+        System.out.println(sum/numberProcess);
+    }
 
-        System.out.println(isSafe());
+    private static void calculateWaiting() {
+        System.out.print("Each Flight has wait (hours): ");
+        for (int i=0; i<numberProcess; i++) {
+            System.out.print(xyz.getFlightsArray()[i].getRank() + " ");
+        }
+        System.out.println();
     }
 }

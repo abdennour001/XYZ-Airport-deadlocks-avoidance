@@ -8,11 +8,9 @@ public class Airport {
 
     private final String name="XYZ Airport";
     private int numberFlight=0;
-    private Flight[] flightsArray;
+    private Flight[] flightsArray=new Flight[100];
 
     /** variables for bankers algorithm **/
-
-    private int numberProcess;
 
     // number of resources is limited to 5
     private final int numberResources =5;
@@ -33,7 +31,33 @@ public class Airport {
         try {
             File originFile=new File(this.pathToOriginFile);
             Scanner sc=new Scanner(originFile);
-            
+
+            this.numberFlight = Integer.parseInt(sc.nextLine());
+            String rBuffer=sc.nextLine();
+            // read the resource occurrences
+            for (int i=0; i<numberResources; i++) {
+                Resource.setNumberOccurrences(i, Integer.parseInt(rBuffer.split(" ")[i].trim()));
+            }
+
+            sc.nextLine();
+            // read the Needed table
+            for (int i=0; i<numberFlight; i++) {
+                String rBuffer2 = sc.nextLine();
+                Flight flight=new Flight("flight"+i+1);
+                for (int j=0; j<numberResources; j++) {
+                    flight.setResourceNeedArray(j, Integer.parseInt(rBuffer2.split(" ")[j].trim()));
+                }
+                flightsArray[i] = flight;
+            }
+
+            sc.nextLine();
+            // read the assigned table
+            for (int i=0; i<numberFlight; i++) {
+                String rBuffer3 = sc.nextLine();
+                for (int j=0; j<numberResources; j++) {
+                    flightsArray[i].setAssignedArray(j, Integer.parseInt(rBuffer3.split(" ")[j].trim()));
+                }
+            }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -45,14 +69,6 @@ public class Airport {
 
     public int getNumberResources() {
         return numberResources;
-    }
-
-    public int getNumberProcess() {
-        return numberProcess;
-    }
-
-    public void setNumberProcess(int numberProcess) {
-        this.numberProcess = numberProcess;
     }
 
     public int getNumberFlight() {
@@ -75,4 +91,5 @@ public class Airport {
         this.flightsArray[numberFlight] = flight;
         numberFlight++;
     }
+
 }
